@@ -17,7 +17,8 @@ public class RectangleBoardView extends AbstractBoardView {
     private List<Piece> piecePositions = Collections.emptyList();
     private Consumer<Piece> clickListener;
 
-    // 사각형 외곽 20칸 노드 좌표 (1080×1080 기준)
+    // 사각형 외곽 20칸 + Node20 (출발점 한 바퀴 돈 지점)
+    // Node20은 Node0과 같은 좌표지만 로직상 별개로 취급합니다.
     private static final Map<Integer, Point> NODE_COORDS = Map.ofEntries(
         Map.entry(0,  new Point(981, 980)),
         Map.entry(1,  new Point(981, 780)),
@@ -38,7 +39,8 @@ public class RectangleBoardView extends AbstractBoardView {
         Map.entry(16, new Point(301, 980)),
         Map.entry(17, new Point(461, 980)),
         Map.entry(18, new Point(621, 980)),
-        Map.entry(19, new Point(781, 980))
+        Map.entry(19, new Point(781, 980)),
+        Map.entry(20, new Point(981, 980))  // Node20: 출발점 한 바퀴 돈 위치
     );
 
     public RectangleBoardView(SettingModel config) {
@@ -46,20 +48,18 @@ public class RectangleBoardView extends AbstractBoardView {
         setBackground(Color.WHITE);
         boardImage = new ImageIcon("src/yutgame/img/Board4.png").getImage();
 
-        // 클릭 리스너: 판 위의 말(합쳐진 그룹) 클릭
+        // 판 위 클릭 → pieceSelectedCallback 호출
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int sz = 500 / 12;
                 Point click = e.getPoint();
-                // 그룹별로 판단
+                // 같은 칸에 모여있는 말들 중 대표 하나를 클릭
                 Map<Integer, List<Piece>> grouped = piecePositions.stream()
                     .collect(Collectors.groupingBy(Piece::getPosition));
                 for (var entry : grouped.entrySet()) {
                     Point loc = calculateLocationRelative(entry.getKey());
-                    Rectangle r = new Rectangle(
-                        loc.x - sz/2, loc.y - sz/2, sz, sz
-                    );
+                    Rectangle r = new Rectangle(loc.x - sz/2, loc.y - sz/2, sz, sz);
                     if (r.contains(click) && clickListener != null) {
                         clickListener.accept(entry.getValue().get(0));
                         return;
@@ -80,12 +80,11 @@ public class RectangleBoardView extends AbstractBoardView {
         for (var entry : grouped.entrySet()) {
             int pos = entry.getKey();
             List<Piece> list = entry.getValue();
-            // 대표 말 하나 가져옴
             Piece rep = list.get(0);
             String playerId = rep.getId().split("_")[0];
             int count = list.size();
 
-            // 이미지: piece_<playerId>_<count>.png
+            // piece_<playerId>_<count>.png
             String path = "src/yutgame/img/piece_" + playerId + "_" + count + ".png";
             Image img = new ImageIcon(path).getImage();
             Point loc = calculateLocationRelative(pos);
@@ -95,10 +94,13 @@ public class RectangleBoardView extends AbstractBoardView {
 
     @Override
     public void refresh(List<Piece> pieces) {
-        // start(0) 제외
+        // 표시할 위치: position>0 && position<=20
         this.piecePositions = pieces.stream()
-                                     .filter(p -> p.getPosition() != 0)
-                                     .collect(Collectors.toList());
+            .filter(p -> {
+                int pos = p.getPosition();
+                return pos > 0 && NODE_COORDS.containsKey(pos);
+            })
+            .collect(Collectors.toList());
         repaint();
     }
 
@@ -115,7 +117,8 @@ public class RectangleBoardView extends AbstractBoardView {
     @Override
     public List<Point> getNodeLocations() {
         List<Point> pts = new ArrayList<>();
-        for (int i = 0; i < NODE_COORDS.size(); i++) {
+        // 0~20까지 포함
+        for (int i = 0; i <= 20; i++) {
             pts.add(calculateLocationRelative(i));
         }
         return Collections.unmodifiableList(pts);
@@ -123,7 +126,7 @@ public class RectangleBoardView extends AbstractBoardView {
 
     @Override
     public void animatePiece(Piece piece, int from, int to) {
-        // 추후 애니메이션 구현
+        // 필요 시 애니메이션 구현
     }
 
     private Point calculateLocationRelative(int pos) {

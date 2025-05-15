@@ -57,33 +57,36 @@ public class SwingGameView implements IGameView {
         inventoryPanel.setBorder(BorderFactory.createTitledBorder("인벤토리"));
 
         // ── 정보 / 던지기 / 결과 / 점수 ────────────────────────
-        // (1) 차례 표시
-        infoView = new PlayerInfoView(players) {
-            {   // 생성 직후 폰트/테두리 살짝 조정
-                for (Component c : getComponents()) {
-                    if (c instanceof JLabel l) {
-                        l.setFont(l.getFont().deriveFont(12f));
-                        l.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                    }
+        // (1) 차례 표시 (작게)
+        infoView = new PlayerInfoView(players) {{
+            for (Component c : getComponents()) {
+                if (c instanceof JLabel l) {
+                    l.setFont(l.getFont().deriveFont(12f));
+                    l.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
                 }
             }
-        };
+            setAlignmentX(Component.CENTER_ALIGNMENT);
+        }};
 
-        // (2) 윷 던지기 버튼 크게
+        // (2) 윷 던지기 버튼 크게 + 중앙 정렬
         throwButton = new JButton("윷 던지기");
         throwButton.setPreferredSize(new Dimension(200, 60));
+        throwButton.setMaximumSize(new Dimension(200, 60));
+        throwButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+        throwButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        throwButton.addActionListener(e -> {
+            if (throwCallback != null) throwCallback.run();
+        });
 
-        // (3) 결과뷰 폰트 작게
-        resultView = new YutResultView() {
-            {
-                // 내부 라벨의 폰트 크기를 14pt로 다운
-                for (Component c : getComponents()) {
-                    if (c instanceof JLabel l) {
-                        l.setFont(new Font(l.getFont().getName(), Font.BOLD, 14));
-                    }
+        // (3) 결과뷰 폰트 작게 + 중앙 정렬
+        resultView = new YutResultView() {{
+            for (Component c : getComponents()) {
+                if (c instanceof JLabel l) {
+                    l.setFont(new Font(l.getFont().getName(), Font.BOLD, 14));
                 }
             }
-        };
+            setAlignmentX(Component.CENTER_ALIGNMENT);
+        }};
 
         // (4) 각 플레이어별 골인 점수 패널
         JPanel scorePanel = new JPanel(new GridLayout(1, players.size(), 10, 0));
@@ -94,11 +97,7 @@ public class SwingGameView implements IGameView {
             scoreLabels.put(p, lbl);
             scorePanel.add(lbl);
         }
-
-        // 버튼 눌렀을 때 콜백
-        throwButton.addActionListener(e -> {
-            if (throwCallback != null) throwCallback.run();
-        });
+        scorePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // 컨트롤 패널 구성
         JPanel ctrl = new JPanel();
@@ -204,11 +203,8 @@ public class SwingGameView implements IGameView {
     /** 골인 점수 표시 (각 player별) */
     @Override
     public void updateScore(int ignored) {
-        // 실제 점수는 GameController 쪽에서 players.get(i).getScore() 형태로
-        // 호출 시 반복 갱신해 주시면 됩니다.
         for (Player p : players) {
-            // 예: p.getScore() 메소드가 있다면
-            int sc = p.getScore(); 
+            int sc = p.getScore();  // Player 클래스에 getScore() 구현 필요
             scoreLabels.get(p).setText(p.getId() + ": " + sc);
         }
     }

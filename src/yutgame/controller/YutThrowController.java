@@ -77,6 +77,8 @@ public class YutThrowController {
         // 뷰 갱신
         view.refreshBoard(model.getPiecePositions());
         view.refreshInventory(model.getPiecePositions());
+        // ★ 추가: 골인 점수 반영
+        view.updateScore(0);
 
         // 턴 종료
         controller.nextTurn();
