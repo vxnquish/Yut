@@ -1,42 +1,37 @@
+// src/yutgame/controller/GameController.java
 package yutgame.controller;
 
-import java.util.Collections;
 import java.util.List;
-import yutgame.model.SettingModel;
-import yutgame.model.GameModel;
-import yutgame.model.Player;
-import yutgame.view.GameView;
-import yutgame.view.AbstractBoardView;
+import yutgame.model.*;
+import yutgame.view.*;
 
+/**
+ * 게임의 메인 컨트롤러입니다.
+ * 모델과 뷰를 연결하고, 턴 로직을 처리합니다.
+ */
 public class GameController {
     private final GameModel model;
-    private final GameView view;
+    private final IGameView view;
     private final YutThrowController throwController;
 
     public GameController(SettingModel config) {
-        // 1) 모델 초기화
+        // 모델 초기화
         this.model = new GameModel(config);
 
-        // 2) 뷰 초기화 (Setting + 플레이어 리스트)
-        List<Player> players = model.getPlayers();
-        this.view = new GameView(config, players);
-        view.setVisible(true);
+        // SwingGameView를 IGameView로 생성 및 보여주기
+        this.view = new SwingGameView(config, model.getPlayers());
+        view.show();
 
-        // 3) 서브 컨트롤러 연결 (GameView 까지 전달!)
-        this.throwController = new YutThrowController(
-            view.getThrowButton(),
-            view.getResultView(),
-            model,
-            this,
-            view,
-            view.getBoardView()
-        );
+        // 초기 화면 세팅
+        view.refreshBoard(model.getPiecePositions());
+        view.refreshInventory(model.getPiecePositions());
+        view.updateTurn(model.getCurrentPlayer());
 
-        // 4) 초기 인벤토리 세팅 (모두 position==0)
-        view.updateInventory(Collections.emptyList(), players);
+        // 윷 던지기 컨트롤러 연결
+        this.throwController = new YutThrowController(view, model, this);
     }
 
-    /** 턴 넘기기 */
+    /** 다음 턴으로 넘기고 뷰 업데이트 */
     public void nextTurn() {
         model.nextTurn();
         view.updateTurn(model.getCurrentPlayer());

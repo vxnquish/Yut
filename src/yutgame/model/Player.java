@@ -1,3 +1,4 @@
+// src/yutgame/model/Player.java
 package yutgame.model;
 
 import java.util.ArrayList;
@@ -10,6 +11,9 @@ public class Player {
     private final String id;
     private final List<Piece> pieces;
     private int currentPieceIndex;
+
+    // ★ 여기에 추가
+    private int score = 0;
 
     public Player(String id, int numPieces) {
         this.id = id;
@@ -36,5 +40,16 @@ public class Player {
         Piece p = pieces.get(currentPieceIndex);
         currentPieceIndex = (currentPieceIndex + 1) % pieces.size();
         return p;
+    }
+
+    // ★ 점수 관련 메서드들
+    /** 현재 골인(점수)된 말 개수 반환 */
+    public int getScore() {
+        return score;
+    }
+
+    /** 골인 시 호출해서 점수를 1 올립니다 */
+    public void incrementScore() {
+        score++;
     }
 }

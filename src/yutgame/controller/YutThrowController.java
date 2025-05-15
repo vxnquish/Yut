@@ -2,105 +2,83 @@
 package yutgame.controller;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import javax.swing.JButton;
-import yutgame.model.GameModel;
-import yutgame.model.Piece;
-import yutgame.view.AbstractBoardView;
-import yutgame.view.GameView;
-import yutgame.view.YutResultView;
+import yutgame.model.*;
+import yutgame.view.*;
 
+/**
+ * 윷 던지기 버튼과 말 이동을 제어하는 컨트롤러입니다.
+ */
 public class YutThrowController {
-    private final JButton throwButton;
-    private final YutResultView resultView;
+    private final IGameView view;
     private final GameModel model;
-    private final GameController gameController;
-    private final GameView gameView;
-    private final AbstractBoardView boardView;
+    private final GameController controller;
     private List<Piece> lastMovable = List.of();
-    // 한 번 뭉친 뒤엔 계속 그룹 이동
-    private final Set<Piece> grouped = new HashSet<>();
+    // "<ownerId>@<startPos>" 형태의 키로 한 번 뭉친 그룹을 추적합니다.
+    private final Set<String> groupedKeys = new HashSet<>();
 
-    public YutThrowController(
-        JButton throwButton,
-        YutResultView resultView,
-        GameModel model,
-        GameController gameController,
-        GameView gameView,
-        AbstractBoardView boardView
-    ) {
-        this.throwButton    = throwButton;
-        this.resultView     = resultView;
-        this.model          = model;
-        this.gameController = gameController;
-        this.gameView       = gameView;
-        this.boardView      = boardView;
+    public YutThrowController(IGameView view, GameModel model, GameController controller) {
+        this.view       = view;
+        this.model      = model;
+        this.controller = controller;
 
-        throwButton.addActionListener(e -> {
+        // 1) 윷 던지기 이벤트
+        view.onThrow(() -> {
             int res = model.throwYut();
-            resultView.showResult(res);
+            view.showResult(res);
 
             lastMovable = model.getMovablePieces();
             boolean hasMove = lastMovable.stream()
                 .anyMatch(p -> !(res == 0 && p.getPosition() == 0));
             if (!hasMove) {
-                gameController.nextTurn();
-                return;
+                controller.nextTurn();
             }
-            boardView.highlightMoves(lastMovable);
         });
 
-        boardView.addPieceClickListener(this::handleMove);
-        gameView.addInventoryClickListener(this::handleMove);
+        // 2) 말 선택 이벤트 (인벤토리 또는 보드)
+        view.onPieceSelected(this::handleMove);
     }
 
-    private void handleMove(Piece p) {
-        if (!lastMovable.contains(p)) return;
+    private void handleMove(Piece piece) {
+        if (!lastMovable.contains(piece)) return;
 
-        int startPos = p.getPosition();
-        String ownerId = p.getId().split("_")[0];
+        int startPos = piece.getPosition();
+        String ownerId = piece.getId().split("_")[0];
+        String key = ownerId + "@" + startPos;
 
-        // 같은 칸의 동일 소유자 말들
+        // 같은 칸에 있는, 같은 플레이어 소유의 말들
         List<Piece> cellPieces = model.getPiecePositions().stream()
-            .filter(q -> q.getPosition() == startPos)
-            .filter(q -> q.getId().split("_")[0].equals(ownerId))
-            .collect(Collectors.toList());
+            .filter(p -> p.getPosition() == startPos)
+            .filter(p -> p.getId().startsWith(ownerId + "_"))
+            .toList();
 
         List<Piece> toMove;
-        if (grouped.contains(p)) {
-            // 이미 그룹에 속하면, 그 그룹 전체 이동
-            toMove = new ArrayList<>();
-            for (Piece gp : grouped) {
-                if (gp.getId().split("_")[0].equals(ownerId)) {
-                    toMove.add(gp);
-                }
-            }
+        if (groupedKeys.contains(key)) {
+            // 이미 그룹에 묶인 경우: 계속 그룹 전체 이동
+            toMove = cellPieces;
         } else if (startPos != 0 && cellPieces.size() >= 2) {
-            // 0이 아닌 칸에서 두 개 이상 만났을 때만 그룹화
-            grouped.addAll(cellPieces);
+            // 0이 아닌 칸에서 처음 두 개 이상 뭉친 순간
+            groupedKeys.add(key);
             toMove = cellPieces;
         } else {
-            // 그 외엔 단일 말만 이동
-            toMove = List.of(p);
+            // 그 외: 클릭한 말 하나만 이동
+            toMove = List.of(piece);
         }
 
-        // 모두 이동
-        for (Piece m : toMove) {
-            model.movePiece(m);
-        }
+        // 이동 처리
+        toMove.forEach(model::movePiece);
         int dest = toMove.get(0).getPosition();
 
-        // 포획: dest에 상대 말들 start(0)로
+        // 포획 처리: 도착지에 상대말이 있으면 start(0)로 돌려보냄
         model.getPiecePositions().stream()
-            .filter(q -> q.getPosition() == dest)
-            .filter(q -> !q.getId().split("_")[0].equals(ownerId))
-            .forEach(q -> q.setPosition(0));
+            .filter(p -> p.getPosition() == dest)
+            .filter(p -> !p.getId().startsWith(ownerId + "_"))
+            .forEach(p -> p.setPosition(0));
 
-        // 화면 갱신
-        List<Piece> all = model.getPiecePositions();
-        boardView.refresh(all);
-        gameView.updateInventory(all, model.getPlayers());
+        // 뷰 갱신
+        view.refreshBoard(model.getPiecePositions());
+        view.refreshInventory(model.getPiecePositions());
 
-        gameController.nextTurn();
+        // 턴 종료
+        controller.nextTurn();
     }
 }
