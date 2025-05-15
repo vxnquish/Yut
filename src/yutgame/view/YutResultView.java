@@ -19,7 +19,7 @@ public class YutResultView extends JPanel {
 
     /**
      * 윷 던지기 결과를 텍스트로 표시합니다.
-     * @param result 0=빽도, 1=도, 2=개, 3=걸, 4=윷, 5=모
+     * @param result -1=빽도, 1=도, 2=개, 3=걸, 4=윷, 5=모
      */
     public void showResult(int result) {
         String text;
