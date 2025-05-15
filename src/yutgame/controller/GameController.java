@@ -1,7 +1,7 @@
 // src/yutgame/controller/GameController.java
 package yutgame.controller;
 
-import java.util.List;
+// import java.util.List;
 import yutgame.model.*;
 import yutgame.view.*;
 
