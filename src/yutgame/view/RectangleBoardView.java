@@ -17,9 +17,9 @@ public class RectangleBoardView extends AbstractBoardView {
     private List<Piece> piecePositions = Collections.emptyList();
     private Consumer<Piece> clickListener;
 
-    // 사각형 외곽 20칸 + Node20 (출발점 한 바퀴 돈 지점)
-    // Node20은 Node0과 같은 좌표지만 로직상 별개로 취급합니다.
+    // 1080×1080 기준: 외곽 0–19 + 내부 대각선 20–28 (총 29개 노드)
     private static final Map<Integer, Point> NODE_COORDS = Map.ofEntries(
+        // ── 외곽 0–19 ───────────────────────────────────
         Map.entry(0,  new Point(981, 980)),
         Map.entry(1,  new Point(981, 780)),
         Map.entry(2,  new Point(981, 620)),
@@ -40,7 +40,16 @@ public class RectangleBoardView extends AbstractBoardView {
         Map.entry(17, new Point(461, 980)),
         Map.entry(18, new Point(621, 980)),
         Map.entry(19, new Point(781, 980)),
-        Map.entry(20, new Point(981, 980))  // Node20: 출발점 한 바퀴 돈 위치
+        // ── 대각선 내부 9개 노드 20–28 ────────────────────
+        Map.entry(20, new Point(811, 250)),
+        Map.entry(21, new Point(691, 380)),
+        Map.entry(22, new Point(540, 540)),
+        Map.entry(23, new Point(390, 690)),
+        Map.entry(24, new Point(271, 805)),
+        Map.entry(25, new Point(271, 250)),
+        Map.entry(26, new Point(390, 380)),
+        Map.entry(27, new Point(691, 690)),
+        Map.entry(28, new Point(811, 805))
     );
 
     public RectangleBoardView(SettingModel config) {
@@ -48,18 +57,19 @@ public class RectangleBoardView extends AbstractBoardView {
         setBackground(Color.WHITE);
         boardImage = new ImageIcon("src/yutgame/img/Board4.png").getImage();
 
-        // 판 위 클릭 → pieceSelectedCallback 호출
+        // 판 위 클릭 → 말 선택
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int sz = 500 / 12;
                 Point click = e.getPoint();
-                // 같은 칸에 모여있는 말들 중 대표 하나를 클릭
                 Map<Integer, List<Piece>> grouped = piecePositions.stream()
                     .collect(Collectors.groupingBy(Piece::getPosition));
                 for (var entry : grouped.entrySet()) {
                     Point loc = calculateLocationRelative(entry.getKey());
-                    Rectangle r = new Rectangle(loc.x - sz/2, loc.y - sz/2, sz, sz);
+                    Rectangle r = new Rectangle(
+                        loc.x - sz/2, loc.y - sz/2, sz, sz
+                    );
                     if (r.contains(click) && clickListener != null) {
                         clickListener.accept(entry.getValue().get(0));
                         return;
@@ -72,8 +82,18 @@ public class RectangleBoardView extends AbstractBoardView {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        // 배경 그림
         g.drawImage(boardImage, 0, 0, 500, 500, this);
 
+        // (디버깅용) 노드 번호 그리기
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("SansSerif", Font.BOLD, 12));
+        for (var entry : NODE_COORDS.entrySet()) {
+            Point loc = calculateLocationRelative(entry.getKey());
+            g.drawString(String.valueOf(entry.getKey()), loc.x - 6, loc.y - 6);
+        }
+
+        // 말 그리기: 같은 위치 말은 갯수만큼 합쳐서 하나의 이미지(count 표시)
         int sz = 500 / 12;
         Map<Integer, List<Piece>> grouped = piecePositions.stream()
             .collect(Collectors.groupingBy(Piece::getPosition));
@@ -81,12 +101,10 @@ public class RectangleBoardView extends AbstractBoardView {
             int pos = entry.getKey();
             List<Piece> list = entry.getValue();
             Piece rep = list.get(0);
-            String playerId = rep.getId().split("_")[0];
+            String pid = rep.getId().split("_")[0];
             int count = list.size();
-
-            // piece_<playerId>_<count>.png
-            String path = "src/yutgame/img/piece_" + playerId + "_" + count + ".png";
-            Image img = new ImageIcon(path).getImage();
+            String imgPath = "src/yutgame/img/piece_" + pid + "_" + count + ".png";
+            Image img = new ImageIcon(imgPath).getImage();
             Point loc = calculateLocationRelative(pos);
             g.drawImage(img, loc.x - sz/2, loc.y - sz/2, sz, sz, this);
         }
@@ -94,31 +112,29 @@ public class RectangleBoardView extends AbstractBoardView {
 
     @Override
     public void refresh(List<Piece> pieces) {
-        // 표시할 위치: position>0 && position<=20
         this.piecePositions = pieces.stream()
-            .filter(p -> {
-                int pos = p.getPosition();
-                return pos > 0 && NODE_COORDS.containsKey(pos);
-            })
+            // position<0 은 골인(사라짐)
+            // position>0 은 정상
+            // position==0 이지만 이미 움직인 말만 보여줌
+            .filter(p -> p.getPosition() > 0 || (p.getPosition() == 0 && p.hasMoved()))
             .collect(Collectors.toList());
         repaint();
     }
 
     @Override
-    public void highlightMoves(List<Piece> movable) {
+    public void highlightMoves(List<Piece> m) {
         repaint();
     }
 
     @Override
-    public void addPieceClickListener(Consumer<Piece> listener) {
-        this.clickListener = listener;
+    public void addPieceClickListener(Consumer<Piece> l) {
+        this.clickListener = l;
     }
 
     @Override
     public List<Point> getNodeLocations() {
         List<Point> pts = new ArrayList<>();
-        // 0~20까지 포함
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 28; i++) {
             pts.add(calculateLocationRelative(i));
         }
         return Collections.unmodifiableList(pts);
@@ -126,7 +142,7 @@ public class RectangleBoardView extends AbstractBoardView {
 
     @Override
     public void animatePiece(Piece piece, int from, int to) {
-        // 필요 시 애니메이션 구현
+        // 애니메이션 구현 시 사용
     }
 
     private Point calculateLocationRelative(int pos) {
