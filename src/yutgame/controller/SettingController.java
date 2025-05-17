@@ -1,3 +1,4 @@
+// src/yutgame/controller/SettingController.java
 package yutgame.controller;
 
 import yutgame.model.SettingModel;
@@ -25,11 +26,16 @@ public class SettingController {
                 // 2) 설정 창 닫기
                 view.dispose();
 
-                // 3) 게임 컨트롤러 시작
-                new GameController(config);
+                // 3) 게임 컨트롤러 시작 (this 를 넘겨서 재시작 가능하도록)
+                new GameController(SettingController.this, config);
             }
         });
 
+        view.setVisible(true);
+    }
+
+    /** 게임 재시작 시 세팅창을 다시 표시합니다 */
+    public void show() {
         view.setVisible(true);
     }
 }

@@ -28,7 +28,7 @@ public class SettingView extends JFrame {
         c.anchor = GridBagConstraints.CENTER;
 
         Font labelFont = new Font("맑은 고딕", Font.PLAIN, 16);
-        Font controlFont = new Font("맑은 고딕", Font.PLAIN, 14);
+        Font controlFont = new Font("맑은 고딕", Font.PLAIN, 16);
 
         // 플레이어 수
         c.gridy = 0; c.gridx = 0; c.gridwidth = 1;

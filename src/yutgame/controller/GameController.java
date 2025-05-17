@@ -1,39 +1,59 @@
 // src/yutgame/controller/GameController.java
 package yutgame.controller;
 
-// import java.util.List;
-import yutgame.model.*;
-import yutgame.view.*;
+import yutgame.model.GameModel;
+import yutgame.model.Player;
+import yutgame.model.SettingModel;
+import yutgame.view.IGameView;
+import yutgame.view.SwingGameView;
 
-/**
- * 게임의 메인 컨트롤러입니다.
- * 모델과 뷰를 연결하고, 턴 로직을 처리합니다.
- */
 public class GameController {
     private final GameModel model;
     private final IGameView view;
     private final YutThrowController throwController;
+    private final SettingController settingCtrl;
 
-    public GameController(SettingModel config) {
-        // 모델 초기화
+    /**
+     * @param settingCtrl   재시작 시 세팅창으로 복귀하기 위해 넘겨받습니다.
+     * @param config        사용자가 지정한 설정 모델
+     */
+    public GameController(SettingController settingCtrl, SettingModel config) {
+        this.settingCtrl = settingCtrl;
+
+        // 1) 모델 초기화
         this.model = new GameModel(config);
 
-        // SwingGameView를 IGameView로 생성 및 보여주기
+        // 2) 뷰 초기화
         this.view = new SwingGameView(config, model.getPlayers());
         view.show();
-
-        // 초기 화면 세팅
         view.refreshBoard(model.getPiecePositions());
         view.refreshInventory(model.getPiecePositions());
         view.updateTurn(model.getCurrentPlayer());
 
-        // 윷 던지기 컨트롤러 연결
+        // 3) 던지기 컨트롤러 연결
         this.throwController = new YutThrowController(view, model, this);
     }
 
-    /** 다음 턴으로 넘기고 뷰 업데이트 */
+    /**
+     * YutThrowController 에서 턴을 넘기라고 호출될 때마다 수행됩니다.
+     * 게임이 종료되었으면 우승자 다이얼로그, 아니면 다음 플레이어로.
+     */
     public void nextTurn() {
-        model.nextTurn();
-        view.updateTurn(model.getCurrentPlayer());
+        if (model.isGameOver()) {
+            Player winner = model.getWinner();
+            view.showGameOver(
+                winner.getId(),
+                // 재시작 콜백
+                () -> {
+                    view.hide();
+                    settingCtrl.show();
+                },
+                // 종료 콜백
+                () -> System.exit(0)
+            );
+        } else {
+            model.nextTurn();
+            view.updateTurn(model.getCurrentPlayer());
+        }
     }
 }

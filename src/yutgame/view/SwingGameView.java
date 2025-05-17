@@ -10,34 +10,35 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntConsumer;
 import java.util.function.Consumer;
 
 public class SwingGameView implements IGameView {
     private final JFrame frame;
     private final AbstractBoardView boardView;
-    private final JPanel boardWrapper;
-    private final JPanel inventoryPanel;
+    private final JPanel boardWrapper, inventoryPanel, fixedPanel, pendingPanel;
     private final JButton throwButton;
     private final YutResultView resultView;
     private final PlayerInfoView infoView;
     private final List<Player> players;
-
     private final Map<Player, JLabel> scoreLabels = new HashMap<>();
 
     private Runnable throwCallback;
-    private Consumer<Integer> fixedThrowCallback; // ← 추가
+    private IntConsumer fixedThrowCallback;
+    private IntConsumer applyThrowCallback;
     private Consumer<Piece> pieceSelectedCallback;
 
     public SwingGameView(SettingModel config, List<Player> players) {
         this.players = players;
 
+        // Frame
         frame = new JFrame("윷놀이 게임");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1280, 720);
         frame.setLocationRelativeTo(null);
         frame.getContentPane().setBackground(Color.WHITE);
 
-        // ── BoardView ─────────────────────────
+        // BoardView
         boardView = BoardViewFactory.create(config.getBoardShape(), config);
         boardView.setPreferredSize(new Dimension(500, 500));
         boardWrapper = new JPanel(new GridBagLayout());
@@ -47,13 +48,16 @@ public class SwingGameView implements IGameView {
             if (pieceSelectedCallback != null) pieceSelectedCallback.accept(p);
         });
 
-        // ── Inventory ─────────────────────────
+        // Inventory
         inventoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         inventoryPanel.setBackground(Color.WHITE);
         inventoryPanel.setBorder(BorderFactory.createTitledBorder("인벤토리"));
 
-        // ── 컨트롤 패널 ────────────────────────
+        // Controls
         infoView = new PlayerInfoView(players);
+        infoView.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // 랜덤 던지기
         throwButton = new JButton("랜덤 윷 던지기");
         throwButton.setPreferredSize(new Dimension(200, 60));
         throwButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
@@ -62,40 +66,59 @@ public class SwingGameView implements IGameView {
             if (throwCallback != null) throwCallback.run();
         });
 
-        // 고정 던지기 버튼 6개
-        JPanel fixedPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        // 지정 던지기
+        fixedPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        fixedPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         String[] names = { "빽도", "도", "개", "걸", "윷", "모" };
         for (int i = 0; i < 6; i++) {
             int code = i;
             JButton b = new JButton(names[i]);
             b.setPreferredSize(new Dimension(60, 40));
+            b.setAlignmentX(Component.CENTER_ALIGNMENT);
             b.addActionListener(e -> {
                 if (fixedThrowCallback != null) fixedThrowCallback.accept(code);
             });
             fixedPanel.add(b);
         }
 
+        // pending 표시
+        pendingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        pendingPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // 결과뷰
         resultView = new YutResultView();
         resultView.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // 점수판
         JPanel scorePanel = new JPanel(new GridLayout(1, players.size(), 10, 0));
         scorePanel.setBackground(Color.WHITE);
+        scorePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         for (Player p : players) {
             JLabel lbl = new JLabel(p.getId() + ": 0", SwingConstants.CENTER);
             lbl.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+            lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
             scoreLabels.put(p, lbl);
             scorePanel.add(lbl);
         }
-        scorePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // 컨트롤 패널
         JPanel ctrl = new JPanel();
         ctrl.setBackground(Color.WHITE);
         ctrl.setLayout(new BoxLayout(ctrl, BoxLayout.Y_AXIS));
+        ctrl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         ctrl.add(infoView);
         ctrl.add(Box.createVerticalStrut(10));
-        ctrl.add(throwButton);
-        ctrl.add(Box.createVerticalStrut(5));
-        ctrl.add(fixedPanel);            // ← 고정 던지기 버튼들
+
+        JPanel throwRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        throwRow.setBackground(Color.WHITE);
+        throwRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        throwRow.add(throwButton);
+        throwRow.add(fixedPanel);
+        ctrl.add(throwRow);
+
+        ctrl.add(Box.createVerticalStrut(10));
+        ctrl.add(pendingPanel);
         ctrl.add(Box.createVerticalStrut(10));
         ctrl.add(resultView);
         ctrl.add(Box.createVerticalStrut(10));
@@ -120,20 +143,21 @@ public class SwingGameView implements IGameView {
         frame.getContentPane().add(split);
     }
 
-    @Override public void show()                        { frame.setVisible(true); }
-    @Override public void onThrow(Runnable r)           { this.throwCallback = r; }
-    @Override public void onFixedThrow(Consumer<Integer> c) { this.fixedThrowCallback = c; } // ← 구현
-    @Override public void onPieceSelected(Consumer<Piece> c) { this.pieceSelectedCallback = c; }
-    @Override public void showResult(int result)        { resultView.showResult(result); }
-    @Override public void refreshBoard(List<Piece> pcs) { boardView.refresh(pcs); }
-
+    // IGameView 구현
+    @Override public void show()                                   { frame.setVisible(true); }
+    @Override public void hide()                                   { frame.dispose(); }
+    @Override public void onThrow(Runnable r)                      { this.throwCallback = r; }
+    @Override public void onFixedThrow(IntConsumer c)              { this.fixedThrowCallback = c; }
+    @Override public void onApplyThrow(IntConsumer c)              { this.applyThrowCallback = c; }
+    @Override public void onPieceSelected(Consumer<Piece> c)       { this.pieceSelectedCallback = c; }
+    @Override public void refreshBoard(List<Piece> pcs)            { boardView.refresh(pcs); }
     @Override
     public void refreshInventory(List<Piece> onBoard) {
         inventoryPanel.removeAll();
         for (Player p : players) {
-            // position==0 이면서 한 번도 움직이지 않은 말만
             p.getPieces().stream()
-             .filter(pc -> pc.getPosition() == 0 && !pc.hasMoved())
+             // position == 0 인 말은 전부 인벤토리에 표시
+             .filter(pc -> pc.getPosition() == 0)
              .forEach(pc -> {
                 String path = "/yutgame/img/piece_" + p.getId() + "_0.png";
                 ImageIcon ico = new ImageIcon(getClass().getResource(path));
@@ -153,12 +177,43 @@ public class SwingGameView implements IGameView {
         inventoryPanel.revalidate();
         inventoryPanel.repaint();
     }
-
-    @Override public void updateTurn(Player cur)          { infoView.updateCurrentPlayer(cur); }
-    @Override public void updateScore(int ignored)        {
-        players.forEach(p-> scoreLabels.get(p)
-            .setText(p.getId() + ": " + p.getScore()));
+    @Override public void showResult(int result)                   { resultView.showResult(result); }
+    @Override public void showPendingThrows(List<Integer> pend) {
+        pendingPanel.removeAll();
+        for (Integer code : pend) {
+            String name = switch (code) {
+                case 0 -> "빽도"; case 1 -> "도"; case 2 -> "개";
+                case 3 -> "걸"; case 4 -> "윷"; case 5 -> "모";
+                default-> String.valueOf(code);
+            };
+            JButton b = new JButton(name);
+            b.setPreferredSize(new Dimension(60, 40));
+            b.setAlignmentX(Component.CENTER_ALIGNMENT);
+            b.addActionListener(e -> applyThrowCallback.accept(code));
+            pendingPanel.add(b);
+        }
+        pendingPanel.revalidate();
+        pendingPanel.repaint();
     }
-    @Override public void disableThrow()                  { throwButton.setEnabled(false); }
-    @Override public void enableThrow()                   { throwButton.setEnabled(true); }
+    @Override public void highlightMoves(List<Piece> mv)           { boardView.highlightMoves(mv); }
+    @Override public void updateTurn(Player cur)                   { infoView.updateCurrentPlayer(cur); }
+    @Override public void updateScore(int ignored)                 {
+        players.forEach(p-> scoreLabels.get(p).setText(p.getId()+": "+p.getScore()));
+    }
+    @Override public void disableThrow()                           { throwButton.setEnabled(false); }
+    @Override public void enableThrow()                            { throwButton.setEnabled(true); }
+    @Override public void showGameOver(String winnerId, Runnable onRestart, Runnable onExit) {
+        int ans = JOptionPane.showOptionDialog(
+            frame,
+            winnerId + "님이 승리했습니다!\n재시작하시겠습니까?",
+            "게임 종료",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.INFORMATION_MESSAGE,
+            null,
+            new String[]{ "재시작", "종료" },
+            "재시작"
+        );
+        if (ans == JOptionPane.YES_OPTION) onRestart.run();
+        else                                onExit.run();
+    }
 }
