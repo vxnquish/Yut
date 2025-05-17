@@ -39,7 +39,7 @@ public class PlayerInfoView extends JPanel {
         int idx = players.indexOf(current);
         if (idx >= 0) {
             JLabel curr = (JLabel) getComponent(idx);
-            curr.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
+            curr.setBorder(BorderFactory.createLineBorder(Color.GREEN, 2));
             curr.setFont(new Font("맑은 고딕", Font.BOLD, 16));
             currentIndex = idx;
         }

@@ -57,6 +57,7 @@ public class SwingGameView implements IGameView {
         inventoryPanel.setBorder(BorderFactory.createTitledBorder("인벤토리"));
 
         // ── 정보 / 던지기 / 결과 / 점수 ────────────────────────
+
         // (1) 차례 표시 (작게)
         infoView = new PlayerInfoView(players) {{
             for (Component c : getComponents()) {
@@ -69,7 +70,7 @@ public class SwingGameView implements IGameView {
         }};
 
         // (2) 윷 던지기 버튼 크게 + 중앙 정렬
-        throwButton = new JButton("윷 던지기");
+        throwButton = new JButton("랜덤 윷 던지기");
         throwButton.setPreferredSize(new Dimension(200, 60));
         throwButton.setMaximumSize(new Dimension(200, 60));
         throwButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
@@ -78,11 +79,11 @@ public class SwingGameView implements IGameView {
             if (throwCallback != null) throwCallback.run();
         });
 
-        // (3) 결과뷰 폰트 작게 + 중앙 정렬
+        // (3) 결과뷰 폰트 조정 + 중앙 정렬
         resultView = new YutResultView() {{
             for (Component c : getComponents()) {
                 if (c instanceof JLabel l) {
-                    l.setFont(new Font(l.getFont().getName(), Font.BOLD, 14));
+                    l.setFont(new Font(l.getFont().getName(), Font.BOLD, 20));
                 }
             }
             setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -93,7 +94,7 @@ public class SwingGameView implements IGameView {
         scorePanel.setBackground(Color.WHITE);
         for (Player p : players) {
             JLabel lbl = new JLabel(p.getId() + ": 0", SwingConstants.CENTER);
-            lbl.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+            lbl.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
             scoreLabels.put(p, lbl);
             scorePanel.add(lbl);
         }
@@ -134,37 +135,31 @@ public class SwingGameView implements IGameView {
 
     // ■ IGameView 구현 ■
 
-    /** 화면을 보여줍니다. */
     @Override
     public void show() {
         frame.setVisible(true);
     }
 
-    /** 윷 던지기 콜백 등록 */
     @Override
     public void onThrow(Runnable r) {
         this.throwCallback = r;
     }
 
-    /** 판 위 또는 인벤토리에서 말 선택 콜백 등록 */
     @Override
     public void onPieceSelected(Consumer<Piece> c) {
         this.pieceSelectedCallback = c;
     }
 
-    /** 결과 텍스트 표시 */
     @Override
     public void showResult(int result) {
         resultView.showResult(result);
     }
 
-    /** 보드 위의 말을 갱신합니다. */
     @Override
     public void refreshBoard(List<Piece> pieces) {
         boardView.refresh(pieces);
     }
 
-    /** 인벤토리(포지션==0) 상태만 갱신합니다. */
     @Override
     public void refreshInventory(List<Piece> onBoard) {
         inventoryPanel.removeAll();
@@ -194,18 +189,26 @@ public class SwingGameView implements IGameView {
         inventoryPanel.repaint();
     }
 
-    /** 현재 차례 플레이어 표시 */
     @Override
     public void updateTurn(Player current) {
         infoView.updateCurrentPlayer(current);
     }
 
-    /** 골인 점수 표시 (각 player별) */
     @Override
     public void updateScore(int ignored) {
         for (Player p : players) {
-            int sc = p.getScore();  // Player 클래스에 getScore() 구현 필요
+            int sc = p.getScore();  // Player 클래스에 getScore() 필요
             scoreLabels.get(p).setText(p.getId() + ": " + sc);
         }
+    }
+
+    @Override
+    public void disableThrow() {
+        throwButton.setEnabled(false);
+    }
+
+    @Override
+    public void enableThrow() {
+        throwButton.setEnabled(true);
     }
 }

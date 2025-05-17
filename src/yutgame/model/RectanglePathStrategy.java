@@ -3,8 +3,8 @@ package yutgame.model;
 
 /**
  * 사각형 보드를 위한 이동 전략.
- *   • 외곽(0–19)은 cur+steps 가 19 초과 시 곧바로 골인 처리
- *   • 분기점(5,10,20,25,26,22,27)은 각각 if‐else 로 처리
+ *  • 외곽(0–19)은 wrap‐around 로 cur+steps
+ *  • 분기점(5,10,20,25,26,22,27)만 아래 if‐else 로 처리
  */
 public class RectanglePathStrategy implements PathStrategy {
     private static final int OUTER_MAX    = 19;
@@ -15,7 +15,7 @@ public class RectanglePathStrategy implements PathStrategy {
         int dest;
 
         // ──────────────────────────────────
-        //  분기점 전용 로직
+        //  분기점 전용 로직 (생략… 기존과 동일)
         // ──────────────────────────────────
         if (cur == 5) {
             dest = switch (steps) {
@@ -50,6 +50,49 @@ public class RectanglePathStrategy implements PathStrategy {
                 default -> cur;
             };
         }
+        else if (cur == 21) {
+            dest = switch (steps) {
+                case -1 -> 20;
+                case  1 -> 22;
+                case  2 -> 23;
+                case  3 -> 24;
+                case  4 -> 15;
+                case  5 -> 16;
+                default -> cur;
+            };
+        }
+        else if (cur == 22) {
+            dest = switch (steps) {
+                case -1 -> 21;
+                case  1 -> 27;
+                case  2 -> 28;
+                case  3 -> 0;
+                case  4, 5 -> FINISH_INDEX + 1;
+                default -> cur;
+            };
+        }
+        else if (cur == 23) {
+            dest = switch (steps) {
+                case -1 -> 22;
+                case  1 -> 23;
+                case  2 -> 15;
+                case  3 -> 16;
+                case  4 -> 17;
+                case  5 -> 18;
+                default -> cur;
+            };
+        }
+        else if (cur == 24) {
+            dest = switch (steps) {
+                case -1 -> 23;
+                case  1 -> 15;
+                case  2 -> 16;
+                case  3 -> 17;
+                case  4 -> 18;
+                case  5 -> 19;
+                default -> cur;
+            };
+        }
         else if (cur == 25) {
             dest = switch (steps) {
                 case -1 -> 10;
@@ -68,17 +111,7 @@ public class RectanglePathStrategy implements PathStrategy {
                 case  2 -> 27;
                 case  3 -> 28;
                 case  4 -> 0;
-                case  5 -> FINISH_INDEX + 1; // 통과
-                default -> cur;
-            };
-        }
-        else if (cur == 22) {
-            dest = switch (steps) {
-                case -1 -> 21;
-                case  1 -> 27;
-                case  2 -> 28;
-                case  3 -> 0;
-                case  4, 5 -> FINISH_INDEX + 1; // 통과
+                case  5 -> FINISH_INDEX + 1;
                 default -> cur;
             };
         }
@@ -87,23 +120,34 @@ public class RectanglePathStrategy implements PathStrategy {
                 case -1 -> 22;
                 case  1 -> 28;
                 case  2 -> 0;
-                case  3, 4, 5 -> FINISH_INDEX + 1; // 통과
+                case  3, 4, 5 -> FINISH_INDEX + 1;
                 default -> cur;
             };
         }
 
         // ──────────────────────────────────
-        //  일반 외곽(0–19) 이동: 19 초과 시 곧바로 골인
+        //  일반 외곽(0–19) 이동
         // ──────────────────────────────────
         else {
-            dest = cur + steps;
-            if (dest > OUTER_MAX) {
-                // 여기서 wrap‐around 대신 곧바로 finish 인덱스 초과를 반환
-                dest = FINISH_INDEX + 1;
+            int raw = cur + steps;
+
+            // ▶ 한 바퀴+1칸(raw > OUTER_MAX+1) 넘어가면 골인
+            if (raw > OUTER_MAX + 1) {
+                return FINISH_INDEX + 1;
             }
-            else if (dest < 0) {
-                // 빽도 음수 방지
+            // ▶ 딱 한 바퀴(raw == OUTER_MAX+1)이면 출발점(0)으로
+            if (raw == OUTER_MAX + 1) {
+                return 0;
+            }
+            // ▶ 한 바퀴 이내(raw <= OUTER_MAX)면 wrap
+            if (raw > OUTER_MAX) {
+                dest = raw - (OUTER_MAX + 1);
+            }
+            else if (raw < 0) {
                 dest = 0;
+            }
+            else {
+                dest = raw;
             }
         }
 

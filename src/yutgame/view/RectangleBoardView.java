@@ -41,15 +41,15 @@ public class RectangleBoardView extends AbstractBoardView {
         Map.entry(18, new Point(621, 980)),
         Map.entry(19, new Point(781, 980)),
         // ── 대각선 내부 9개 노드 20–28 ────────────────────
-        Map.entry(20, new Point(811, 250)),
+        Map.entry(20, new Point(811, 260)),
         Map.entry(21, new Point(691, 380)),
         Map.entry(22, new Point(540, 540)),
         Map.entry(23, new Point(390, 690)),
-        Map.entry(24, new Point(271, 805)),
-        Map.entry(25, new Point(271, 250)),
+        Map.entry(24, new Point(271, 810)),
+        Map.entry(25, new Point(271, 260)),
         Map.entry(26, new Point(390, 380)),
         Map.entry(27, new Point(691, 690)),
-        Map.entry(28, new Point(811, 805))
+        Map.entry(28, new Point(811, 810))
     );
 
     public RectangleBoardView(SettingModel config) {

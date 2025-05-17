@@ -10,7 +10,7 @@ public class YutResultView extends JPanel {
     public YutResultView() {
         // 결과 라벨 초기화
         lblResult = new JLabel("결과: -", SwingConstants.CENTER);
-        lblResult.setFont(new Font("맑은 고딕", Font.BOLD, 16));
+        lblResult.setFont(new Font("맑은 고딕", Font.BOLD, 20));
 
         // 레이아웃 설정 및 라벨 추가
         setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
