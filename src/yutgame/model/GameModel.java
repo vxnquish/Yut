@@ -1,7 +1,7 @@
-// src/yutgame/model/GameModel.java
 package yutgame.model;
 
 import java.util.*;
+import java.util.Random;
 
 public class GameModel {
     private final PathStrategy path;
@@ -18,6 +18,7 @@ public class GameModel {
         }
         this.currentPlayerIndex = 0;
         this.extraTurn = false;
+        // 보드 모양별 전략 주입
         this.path = PathStrategyFactory.of(config.getBoardShape());
     }
 
@@ -49,22 +50,25 @@ public class GameModel {
 
     /** 선택된 말을 이동시키고, 골인 처리까지 담당 */
     public void movePiece(Piece piece) {
-        int steps = switch (lastThrow) {
-            case 0 -> -1;
-            case 1 -> 1;
-            case 2 -> 2;
-            case 3 -> 3;
-            case 4 -> 4;
-            case 5 -> 5;
-            default -> 0;
-        };
+        int steps;
+        switch (lastThrow) {
+            case 0: steps = -1; break;
+            case 1: steps =  1; break;
+            case 2: steps =  2; break;
+            case 3: steps =  3; break;
+            case 4: steps =  4; break;
+            case 5: steps =  5; break;
+            default: steps =  0; break;
+        }
         int cur = piece.getPosition();
         int dest = path.next(cur, steps);
 
         if (path.isFinish(dest)) {
+            // 골인
             piece.setPosition(-1);
             findPlayer(piece.getId().split("_")[0]).incrementScore();
         } else if (dest < 0) {
+            // 빽도 음수 방지
             piece.setPosition(0);
         } else {
             piece.setPosition(dest);
@@ -77,19 +81,31 @@ public class GameModel {
         return Collections.unmodifiableList(all);
     }
 
+    /** 턴 넘기기 (extraTurn==false일 때만) */
     public void nextTurn() {
-        if (!extraTurn) currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        if (!extraTurn) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        }
         extraTurn = false;
     }
 
-    public boolean isTurnOver()       { return !extraTurn; }
-    public Player getCurrentPlayer() { return players.get(currentPlayerIndex); }
-    public List<Player> getPlayers() { return Collections.unmodifiableList(players); }
+    /** 추가 턴이 남아있는지 여부 */
+    public boolean isTurnOver() {
+        return !extraTurn;
+    }
+
+    public Player getCurrentPlayer() {
+        return players.get(currentPlayerIndex);
+    }
+
+    public List<Player> getPlayers() {
+        return Collections.unmodifiableList(players);
+    }
 
     private Player findPlayer(String id) {
         return players.stream()
-                      .filter(p -> p.getId().equals(id))
-                      .findFirst()
-                      .orElseThrow();
+            .filter(p -> p.getId().equals(id))
+            .findFirst()
+            .orElseThrow();
     }
 }
