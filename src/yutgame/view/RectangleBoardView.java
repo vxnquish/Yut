@@ -19,35 +19,49 @@ public class RectangleBoardView extends AbstractBoardView {
 
     // 1080×1080 기준: 외곽 0–19 + 내부 대각선 20–28 (총 29개 노드)
     private static final Map<Integer, Point> NODE_COORDS = Map.ofEntries(
-        // ── 외곽 0–19 ───────────────────────────────────
-        Map.entry(0,  new Point(981, 980)),
+
+        // ── 외곽 0–19 + 29 ───────────────────────────────────
+        Map.entry(0,  new Point(981, 985)),
+        Map.entry(29,  new Point(981, 985)),
+
         Map.entry(1,  new Point(981, 780)),
         Map.entry(2,  new Point(981, 620)),
         Map.entry(3,  new Point(981, 460)),
         Map.entry(4,  new Point(981, 300)),
+
         Map.entry(5,  new Point(981, 100)),
+
         Map.entry(6,  new Point(781, 100)),
         Map.entry(7,  new Point(621, 100)),
         Map.entry(8,  new Point(461, 100)),
         Map.entry(9,  new Point(301, 100)),
+
         Map.entry(10, new Point(100, 100)),
+
         Map.entry(11, new Point(100, 300)),
         Map.entry(12, new Point(100, 460)),
         Map.entry(13, new Point(100, 620)),
         Map.entry(14, new Point(100, 780)),
-        Map.entry(15, new Point(100, 980)),
-        Map.entry(16, new Point(301, 980)),
-        Map.entry(17, new Point(461, 980)),
-        Map.entry(18, new Point(621, 980)),
-        Map.entry(19, new Point(781, 980)),
+
+        Map.entry(15, new Point(100, 985)),
+        Map.entry(16, new Point(301, 985)),
+
+        Map.entry(17, new Point(461, 985)),
+        Map.entry(18, new Point(621, 985)),
+        Map.entry(19, new Point(781, 985)),
+
         // ── 대각선 내부 9개 노드 20–28 ────────────────────
         Map.entry(20, new Point(811, 260)),
         Map.entry(21, new Point(691, 380)),
+
         Map.entry(22, new Point(540, 540)),
+
         Map.entry(23, new Point(390, 690)),
         Map.entry(24, new Point(271, 810)),
+
         Map.entry(25, new Point(271, 260)),
         Map.entry(26, new Point(390, 380)),
+
         Map.entry(27, new Point(691, 690)),
         Map.entry(28, new Point(811, 810))
     );

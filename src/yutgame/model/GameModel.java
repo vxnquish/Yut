@@ -18,11 +18,10 @@ public class GameModel {
         }
         this.currentPlayerIndex = 0;
         this.extraTurn = false;
-        // 보드 모양별 전략 주입
         this.path = PathStrategyFactory.of(config.getBoardShape());
     }
 
-    /** 윷 던지기 */
+    /** 랜덤 윷 던지기 */
     public int throwYut() {
         int r = random.nextInt(6);
         lastThrow = r;
@@ -30,7 +29,14 @@ public class GameModel {
         return r;
     }
 
-    /** 이동 가능한 말 반환 (빽도 시 위치0 말 제외) */
+    /** 지정 윷 던지기 */
+    public int throwYut(int forcedResult) {
+        lastThrow = forcedResult;
+        extraTurn = (forcedResult == 4 || forcedResult == 5);
+        return forcedResult;
+    }
+
+    /** 이동 가능한 말 반환 (빽도 시 position==0인 말 제외) */
     public List<Piece> getMovablePieces() {
         Player cur = getCurrentPlayer();
         List<Piece> lst = new ArrayList<>();
@@ -56,7 +62,6 @@ public class GameModel {
         int dest = path.next(cur, steps);
 
         if (path.isFinish(dest)) {
-            // 골인
             piece.setPosition(-1);
             findPlayer(piece.getId().split("_")[0]).incrementScore();
         } else if (dest < 0) {
@@ -77,14 +82,14 @@ public class GameModel {
         extraTurn = false;
     }
 
-    public boolean isTurnOver()    { return !extraTurn;            }
-    public Player  getCurrentPlayer() { return players.get(currentPlayerIndex); }
-    public List<Player> getPlayers()   { return Collections.unmodifiableList(players); }
+    public boolean isTurnOver()       { return !extraTurn; }
+    public Player getCurrentPlayer() { return players.get(currentPlayerIndex); }
+    public List<Player> getPlayers() { return Collections.unmodifiableList(players); }
 
     private Player findPlayer(String id) {
         return players.stream()
-            .filter(p -> p.getId().equals(id))
-            .findFirst()
-            .orElseThrow();
+                      .filter(p -> p.getId().equals(id))
+                      .findFirst()
+                      .orElseThrow();
     }
 }

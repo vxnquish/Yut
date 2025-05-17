@@ -8,14 +8,14 @@ package yutgame.model;
  */
 public class RectanglePathStrategy implements PathStrategy {
     private static final int OUTER_MAX    = 19;
-    private static final int FINISH_INDEX = 28;
+    private static final int FINISH_INDEX = 29;
 
     @Override
     public int next(int cur, int steps) {
         int dest;
 
         // ──────────────────────────────────
-        //  분기점 전용 로직 (생략… 기존과 동일)
+        //  분기점 전용 로직
         // ──────────────────────────────────
         if (cur == 5) {
             dest = switch (steps) {
@@ -66,7 +66,7 @@ public class RectanglePathStrategy implements PathStrategy {
                 case -1 -> 21;
                 case  1 -> 27;
                 case  2 -> 28;
-                case  3 -> 0;
+                case  3 -> 29;
                 case  4, 5 -> FINISH_INDEX + 1;
                 default -> cur;
             };
@@ -100,7 +100,7 @@ public class RectanglePathStrategy implements PathStrategy {
                 case  2 -> 22;
                 case  3 -> 27;
                 case  4 -> 28;
-                case  5 -> 0;
+                case  5 -> 29;
                 default -> cur;
             };
         }
@@ -110,7 +110,7 @@ public class RectanglePathStrategy implements PathStrategy {
                 case  1 -> 22;
                 case  2 -> 27;
                 case  3 -> 28;
-                case  4 -> 0;
+                case  4 -> 29;
                 case  5 -> FINISH_INDEX + 1;
                 default -> cur;
             };
@@ -119,8 +119,24 @@ public class RectanglePathStrategy implements PathStrategy {
             dest = switch (steps) {
                 case -1 -> 22;
                 case  1 -> 28;
-                case  2 -> 0;
+                case  2 -> 29;
                 case  3, 4, 5 -> FINISH_INDEX + 1;
+                default -> cur;
+            };
+        }
+        else if (cur == 28) {
+            dest = switch (steps) {
+                case -1 -> 27;
+                case  1 -> 29;
+                case  2, 3, 4, 5 -> FINISH_INDEX + 1;
+                default -> cur;
+            };
+        }
+        else if (cur == 29) {
+            // 출발점 (Node29)는 Node0으로 이동함
+            dest = switch (steps) {
+                case -1 -> 28; // 되돌릴 경우엔 28로
+                case  1, 2, 3, 4, 5 -> FINISH_INDEX + 1;
                 default -> cur;
             };
         }
@@ -131,20 +147,17 @@ public class RectanglePathStrategy implements PathStrategy {
         else {
             int raw = cur + steps;
 
-            // ▶ 한 바퀴+1칸(raw > OUTER_MAX+1) 넘어가면 골인
             if (raw > OUTER_MAX + 1) {
                 return FINISH_INDEX + 1;
             }
-            // ▶ 딱 한 바퀴(raw == OUTER_MAX+1)이면 출발점(0)으로
             if (raw == OUTER_MAX + 1) {
-                return 0;
+                return 29; // 한 바퀴 완주 후 출발점(Node29) 도달
             }
-            // ▶ 한 바퀴 이내(raw <= OUTER_MAX)면 wrap
             if (raw > OUTER_MAX) {
                 dest = raw - (OUTER_MAX + 1);
             }
             else if (raw < 0) {
-                dest = 0;
+                dest = 29; // 되돌아와도 출발점(Node29)
             }
             else {
                 dest = raw;

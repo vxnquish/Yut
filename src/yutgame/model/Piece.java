@@ -4,8 +4,6 @@ package yutgame.model;
 public class Piece {
     private final String id;
     private int position = 0;
-
-    // ✚ 새로 추가
     private boolean hasMoved = false;
 
     public Piece(String id) {
