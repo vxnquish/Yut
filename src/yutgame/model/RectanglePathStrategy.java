@@ -1,23 +1,29 @@
 // src/yutgame/model/RectanglePathStrategy.java
 package yutgame.model;
 
-/**
- * 사각형 보드를 위한 이동 전략.
- *  • 외곽(0–19)은 wrap‐around 로 cur+steps
- *  • 분기점(5,10,20,25,26,22,27)만 아래 if‐else 로 처리
- */
 public class RectanglePathStrategy implements PathStrategy {
-    private static final int OUTER_MAX    = 19;
-    private static final int FINISH_INDEX = 29;
+    private static final int OUTER_MAX    = 19; // Rec * 5 - 1 = 4 * 5 - 1 = 19
+    private static final int FINISH_INDEX = 29; // 20 + 8 + 1
 
     @Override
     public int next(int cur, int steps) {
         int dest;
 
         // ──────────────────────────────────
-        //  분기점 전용 로직
+        //  특수 로직
         // ──────────────────────────────────
-        if (cur == 5) {
+        if (cur == 1) {
+            dest = switch (steps) {
+                case -1 -> 29;
+                case  1 -> 2;
+                case  2 -> 3;
+                case  3 -> 4;
+                case  4 -> 5;
+                case  5 -> 6;
+                default -> cur;
+            };
+        }
+        else if (cur == 5) {
             dest = switch (steps) {
                 case -1 -> 4;
                 case  1 -> 20;
@@ -151,13 +157,13 @@ public class RectanglePathStrategy implements PathStrategy {
                 return FINISH_INDEX + 1;
             }
             if (raw == OUTER_MAX + 1) {
-                return 29; // 한 바퀴 완주 후 출발점(Node29) 도달
+                return FINISH_INDEX; // 한 바퀴 완주 후 출발점(Node29) 도달
             }
             if (raw > OUTER_MAX) {
                 dest = raw - (OUTER_MAX + 1);
             }
             else if (raw < 0) {
-                dest = 29; // 되돌아와도 출발점(Node29)
+                dest = FINISH_INDEX; // 되돌아와도 출발점(Node29)
             }
             else {
                 dest = raw;

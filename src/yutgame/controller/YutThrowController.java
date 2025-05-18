@@ -28,7 +28,7 @@ public class YutThrowController {
         this.model      = model;
         this.controller = controller;
 
-        // 1) 랜덤 던지기: 윷(4)·모(5)가 나올 동안 계속 뽑아서 pending 에 저장
+        // 1) 랜덤 던지기
         view.onThrow(() -> {
             pending.clear();
             int r;
@@ -41,7 +41,7 @@ public class YutThrowController {
             awaitingMove = false;
         });
 
-        // 2) 지정 던지기: 원하는 결과 하나만 pending
+        // 2) 지정 던지기
         view.onFixedThrow(code -> {
             pending.clear();
             pending.add(code);
@@ -50,17 +50,15 @@ public class YutThrowController {
             awaitingMove = false;
         });
 
-        // 3) 결과 적용 버튼: 누른 code 가 pending 에 있으면 소진하고 적용
+        // 3) 결과 적용
         view.onApplyThrow(code -> {
-            if (awaitingMove) return;                    // 이미 이동 대기 중이면 무시
-            if (!pending.remove((Integer)code)) return;  // pending 에 없으면 무시
+            if (awaitingMove) return;
+            if (!pending.remove((Integer)code)) return;
 
-            // 모델에 lastThrow 세팅 & 결과 표시
             model.throwYut(code);
             view.showResult(code);
 
-            // ◆ 빽도인 경우 ◆  
-            //   - 내 모든 말이 인벤토리(0)일 때만 턴 건너뛰기
+            // 빽도 특별 처리
             boolean allAtHome = model.getCurrentPlayer().getPieces()
                 .stream().allMatch(p -> p.getPosition() == 0);
             if (code == 0 && allAtHome) {
@@ -70,7 +68,7 @@ public class YutThrowController {
                 return;
             }
 
-            // ◆ 이동할 말이 없으면 바로 다음 결과 혹은 턴 종료
+            // 이동 가능 검사
             List<Piece> movable = model.getMovablePieces();
             boolean hasMove = movable.stream()
                 .anyMatch(p -> !(code == 0 && p.getPosition() == 0));
@@ -84,27 +82,26 @@ public class YutThrowController {
                 return;
             }
 
-            // ◆ 정상적으로 이동 대기 상태 ◆
             awaitingMove = true;
             view.highlightMoves(movable);
             view.showPendingThrows(pending);
         });
 
-        // 4) 말 선택 이벤트: 반드시 awaitingMove==true 일 때만 이동
+        // 4) 말 선택
         view.onPieceSelected(piece -> {
             if (!awaitingMove) return;
 
-            int startPos = piece.getPosition();
-            String owner = piece.getId().split("_")[0];
-            String key   = owner + "@" + startPos;
+            // 내 말인지 체크
+            String owner = model.getCurrentPlayer().getId();
+            if (!piece.getId().startsWith(owner + "_")) return;
 
-            // 같은 칸, 같은 플레이어 소유 말들
+            int startPos = piece.getPosition();
+            String key   = owner + "@" + startPos;
             List<Piece> cell = model.getPiecePositions().stream()
                 .filter(p -> p.getPosition() == startPos)
                 .filter(p -> p.getId().startsWith(owner + "_"))
                 .collect(Collectors.toList());
 
-            // 그룹화 로직: 이미 묶였으면 계속 묶음, 아니면 처음에만 묶음
             List<Piece> toMove;
             if (groupedKeys.contains(key)) {
                 toMove = cell;
@@ -115,42 +112,45 @@ public class YutThrowController {
                 toMove = List.of(piece);
             }
 
-            // 4-1) 실제 이동
-            toMove.forEach(p -> {
-                model.movePiece(p);
-                p.setHasMoved(true);  // 한 번이라도 움직였음을 표시
-            });
+            // 이동
+            toMove.forEach(model::movePiece);
             int dest = toMove.get(0).getPosition();
 
-            // 4-2) 포획 처리: 도착지에 상대말이 있으면 인벤토리(0)로 복귀
+            // 포획 처리
+            List<Piece> captured = new ArrayList<>();
             model.getPiecePositions().stream()
                 .filter(p -> p.getPosition() == dest)
                 .filter(p -> !p.getId().startsWith(owner + "_"))
                 .forEach(p -> {
+                    captured.add(p);
                     p.setPosition(0);
-                    p.setHasMoved(false);   // 다시 “집” 상태로
-                    // 혹시 묶음키에 남아있다면 제거
-                    String capKey = p.getId().split("_")[0] + "@" + dest;
-                    groupedKeys.remove(capKey);
                 });
 
-            // 4-3) 뷰 갱신
+            // 뷰 갱신
             view.refreshBoard(model.getPiecePositions());
             view.refreshInventory(model.getPiecePositions());
             view.updateScore(0);
 
             awaitingMove = false;
 
-            // 4-4) pending 이 다 소진되면 턴 종료 및 던지기 버튼 재활성화
+            if (!captured.isEmpty()) {
+                // 포획했으면 추가 턴!
+                groupedKeys.clear();
+                pending.clear();
+                view.showPendingThrows(pending);
+                view.enableThrow();
+                return;
+            }
+
+            // 남은 pending 없으면 턴 종료
             if (pending.isEmpty()) {
-                // 다음 턴으로 넘길 때 그룹 정보도 초기화
                 groupedKeys.clear();
                 controller.nextTurn();
                 view.enableThrow();
             }
         });
 
-        // 초기 상태: 던지기 버튼 활성화
+        // 초기 상태
         view.enableThrow();
     }
 }

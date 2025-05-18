@@ -17,6 +17,7 @@ public class SettingView extends JFrame {
         super("게임 설정");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(400, 320);
+        setResizable(false);
         setLocationRelativeTo(null);
 
         JPanel panel = new JPanel(new GridBagLayout());

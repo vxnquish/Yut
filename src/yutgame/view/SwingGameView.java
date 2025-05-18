@@ -35,6 +35,7 @@ public class SwingGameView implements IGameView {
         frame = new JFrame("윷놀이 게임");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1280, 720);
+        frame.setResizable(false);   
         frame.setLocationRelativeTo(null);
         frame.getContentPane().setBackground(Color.WHITE);
 

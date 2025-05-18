@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 
 public class RectangleBoardView extends AbstractBoardView {
     private final Image boardImage;
+    private final Image debugImage;
     private List<Piece> piecePositions = Collections.emptyList();
     private Consumer<Piece> clickListener;
 
-    // 1080×1080 기준: 외곽 0–19 + 내부 대각선 20–28 + 출발점 29 (총 30개 노드)
     private static final Map<Integer, Point> NODE_COORDS = Map.ofEntries(
         Map.entry(0,  new Point(981, 985)),
         Map.entry(1,  new Point(981, 780)),
@@ -55,6 +55,7 @@ public class RectangleBoardView extends AbstractBoardView {
         setPreferredSize(new Dimension(500, 500));
         setBackground(Color.WHITE);
         boardImage = new ImageIcon("src/yutgame/img/Board4.png").getImage();
+        debugImage = new ImageIcon("src/yutgame/img/piece_P1_0.png").getImage();
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -81,22 +82,28 @@ public class RectangleBoardView extends AbstractBoardView {
         // 배경
         g.drawImage(boardImage, 0, 0, 500, 500, this);
 
-        // (디버깅용) 노드 번호
+        int sz = 500 / 12;
+        
+        /*
+        // (디버깅용) 노드 번호 및 debug 이미지, 오름차순
         g.setColor(Color.BLACK);
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        for (var e : NODE_COORDS.entrySet()) {
-            Point loc = calculateLocationRelative(e.getKey());
-            g.drawString(String.valueOf(e.getKey()), loc.x - 6, loc.y - 6);
+        for (Integer node : new TreeSet<>(NODE_COORDS.keySet())) {
+            Point loc = calculateLocationRelative(node);
+            g.drawString(String.valueOf(node), loc.x - 6, loc.y - 6);
+            g.drawImage(debugImage, loc.x - sz/2, loc.y - sz/2, sz, sz, this);
         }
+        */
 
-        // 말 그리기
-        int sz = 500 / 12;
-        var grouped = piecePositions.stream()
+        // 실제 말 그리기
+        Map<Integer, List<Piece>> grouped = piecePositions.stream()
             .collect(Collectors.groupingBy(Piece::getPosition));
-        for (var e : grouped.entrySet()) {
-            int pos = e.getKey();
-            String pid = e.getValue().get(0).getId().split("_")[0];
-            int count = e.getValue().size();
+        for (var entry : grouped.entrySet()) {
+            int pos = entry.getKey();
+            List<Piece> list = entry.getValue();
+            Piece rep = list.get(0);
+            String pid = rep.getId().split("_")[0];
+            int count = list.size();
             String imgPath = "src/yutgame/img/piece_" + pid + "_" + count + ".png";
             Image img = new ImageIcon(imgPath).getImage();
             Point loc = calculateLocationRelative(pos);
