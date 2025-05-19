@@ -53,7 +53,7 @@ public class HexagonBoardView extends AbstractBoardView {
     public HexagonBoardView(SettingModel config) {
         setPreferredSize(new Dimension(500, 500));
         setBackground(Color.WHITE);
-        boardImage = new ImageIcon("src/yutgame/img/Board4.png").getImage();
+        boardImage = new ImageIcon("src/yutgame/img/Board6.png").getImage();
 
         addMouseListener(new MouseAdapter() {
             @Override
